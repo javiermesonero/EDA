@@ -20,6 +20,7 @@ def cargaDatosLimpios(csvPath):
     df=df[mask]
     mask= ((df['customer_type']=='Transient')|(df['customer_type']=='Transient-Party'))
     df=df[mask] #nos quedamos con las reservas normales fuera de grupos y contratos
+    df["meal"].replace({"Undefined": "SC", }, inplace=True)
     return df
 def dividirDatos(df):
     df_city=df[df['hotel']=='City Hotel']
@@ -28,7 +29,7 @@ def dividirDatos(df):
     
 
 def menu(df,df_city,df_resort):
-    panel_pos=st.selectbox('Página',['0','1','2','3'])  
+    panel_pos=st.selectbox('Página',['0','1','2','3','4','5','6','7','8','9'])  
     if panel_pos=='0':
         panel0(df)
     elif panel_pos=='1':
@@ -37,6 +38,24 @@ def menu(df,df_city,df_resort):
         panel2(df,df_city,df_resort)
     elif panel_pos=='3':
         panel3(df,df_city,df_resort)
+    elif panel_pos=='4':
+        panel4(df,df_city,df_resort)  
+    elif panel_pos=='5':
+        panel5(df,df_city,df_resort) 
+    elif panel_pos=='6':
+        panel6(df,df_city,df_resort)     
+    elif panel_pos=='7':
+        panel7(df,df_city,df_resort) 
+    elif panel_pos=='8':
+        panel8(df,df_city,df_resort) 
+    elif panel_pos=='9':
+        panel9(df,df_city,df_resort) 
+
+
+
+
+
+
 
 def panel0(df):
     st.write('''hablamos de los datos, por que fuera cancelados y grupos y contratos,
@@ -59,12 +78,6 @@ def mostrarGraficaBarras(df,tiempo,scale):
     fig = go.Figure(data = data, layout = layout)
     fig.update_yaxes(range=[0,scale])
     st.plotly_chart(fig)    
-
-
-
-
-
-
 
 
 def panel1 (df,df_city,df_resort):
@@ -157,6 +170,7 @@ def mostrarTreeMap(df):
     st.plotly_chart(fig) 
 
 def panel3 (df,df_city,df_resort):
+
     a,b,c=st.columns(3)
     with b:
         mostrarTreeMap(df)      
@@ -172,3 +186,203 @@ def panel3 (df,df_city,df_resort):
     with c2:
         mostrarTreeMap(df_resort)
         st.write('resort')    
+
+
+def mostrarStackCharSum(df,scale=7500):
+    trace1 = go.Bar(x = df.groupby('arrival_date_week_number').sum()['stays_in_weekend_nights'].index ,
+                    y = df.groupby('arrival_date_week_number').sum()['stays_in_weekend_nights'] )
+    trace2 = go.Bar(x = df.groupby('arrival_date_week_number').sum()['stays_in_week_nights'].index,
+                    y = df.groupby('arrival_date_week_number').sum()['stays_in_week_nights'] )
+    data = [trace1,trace2]
+
+    layout = go.Layout(barmode='stack')
+
+
+    fig = go.Figure(data = data, layout = layout)
+    fig.update_yaxes(range=[0,scale])
+    iplot(fig)
+    st.plotly_chart(fig)
+
+def mostrarStackCharMean(df,scale=5.5):
+    trace1 = go.Bar(x = df.groupby('arrival_date_week_number').mean()['stays_in_weekend_nights'].index ,
+                    y = df.groupby('arrival_date_week_number').mean()['stays_in_weekend_nights'] )
+    trace2 = go.Bar(x = df.groupby('arrival_date_week_number').mean()['stays_in_week_nights'].index,
+                    y = df.groupby('arrival_date_week_number').mean()['stays_in_week_nights'] )
+    data = [trace1,trace2]
+
+    layout = go.Layout(barmode='stack')
+
+
+    fig = go.Figure(data = data, layout = layout)
+    fig.update_yaxes(range=[0,scale])
+    iplot(fig)
+    st.plotly_chart(fig)
+
+
+def panel4(df,df_city,df_resort):
+    st.write('hola')
+    a1,b1=st.columns(2)
+    with a1: 
+        button_sum=st.button('sum')      
+    with b1:
+        button_mean=st.button('mean')
+
+    if button_sum:
+        a,b,c=st.columns(3)
+        with b:
+            mostrarStackCharSum(df)      
+        with a:
+            st.write(' ')  
+        with c:
+            st.write(' ') 
+
+
+        c1,c2=st.columns(2)
+        with c1:
+            mostrarStackCharSum(df_city)
+            st.write('city')
+        with c2:
+            mostrarStackCharSum(df_resort)
+            st.write('resort')  
+    elif button_mean:
+        a,b,c=st.columns(3)
+        with b:
+            mostrarStackCharMean(df)      
+        with a:
+            st.write(' ')  
+        with c:
+            st.write(' ') 
+
+
+        c1,c2=st.columns(2)
+        with c1:
+            mostrarStackCharMean(df_city)
+            st.write('city')
+        with c2:
+            mostrarStackCharMean(df_resort)
+            st.write('resort')
+
+def mostrarMapa(df):
+    fig = go.Figure(data=go.Choropleth(
+    locations=df.groupby('country').size().index, # Spatial coordinates
+    z = df.groupby('country').size().values# Data to be color-coded
+    , colorscale = 'Viridis'))
+
+    fig.show()
+    st.plotly_chart(fig)
+
+def panel5(df,df_city,df_resort):
+    st.write('5')
+    a,b,c=st.columns(3)
+    with a: 
+        st.button('total')      
+    with b:
+        button_city=st.button('city')
+    with c:
+        button_resort=st.button('resort') 
+    
+    if button_city:
+        mostrarMapa(df_city)   
+    elif button_resort:
+        mostrarMapa(df_resort)
+    else :
+        mostrarMapa(df)
+
+
+
+def mostrarPie(df):
+    fig = {
+    "data": [
+    {
+      "values": df.groupby('required_car_parking_spaces').size(),
+      "labels": (df.required_car_parking_spaces.unique()),
+      "name": "Number Of Students Rates",
+      "hoverinfo":"label+percent+name",
+      "type": "pie"
+    },],
+    "layout": {
+        'legend_title_text':'Number of Cars'
+        }
+    }
+
+    iplot(fig)
+    st.plotly_chart(fig)
+
+def panel6(df,df_city,df_resort):
+    st.write('6')
+    a,b,c=st.columns(3)
+    with a: 
+        st.write(' ')  
+    with b:
+        mostrarPie(df)
+    with c:
+        st.write(' ')
+
+
+    c1,c2=st.columns(2)
+    with c1:
+        mostrarPie(df_city)
+        st.write('city')
+    with c2:
+        mostrarPie(df_resort)
+        st.write('resort')  
+
+
+
+def mostrarPieMeal(df):
+    fig = {
+    "data": [
+    {
+      "values": df.groupby('meal').size(),
+      "labels": (df.meal.unique()),
+      "name": "Number Of Students Rates",
+      "hoverinfo":"label+percent+name",
+      "type": "pie"
+    },],
+    "layout": {
+        'legend_title_text':'Number of meal'
+    }
+    }
+    iplot(fig)
+    st.plotly_chart(fig)
+def mostrarPieMeal2(df,order):
+    fig = go.Figure(data=[go.Pie(labels=order,
+                             values=df.groupby('meal').size())])
+    fig.update_layout(legend_title="Legend Title")                         
+    fig.show()
+    st.plotly_chart(fig)
+
+def panel7(df,df_city,df_resort):
+    '''st.write(df.groupby('meal').size())
+    st.write(df_city.groupby('meal').size())
+    st.write(df_resort.groupby('meal').size())
+    st.write(df.meal.unique())
+    st.write(df_city.meal.unique())
+    st.write(df_resort.meal.unique())'''
+    order=(df.meal.unique())
+    
+
+    a,b,c=st.columns(3)
+    with a: 
+        st.write(' ')  
+    with b:
+        mostrarPieMeal2(df,order)
+    with c:
+        st.write(' ')
+
+
+    c1,c2=st.columns(2)
+    with c1:
+        mostrarPieMeal2(df_city,order)
+        st.write('city')
+    with c2:
+        mostrarPieMeal2(df_resort,order)
+        st.write('resort') 
+
+
+
+def panel8(df,df_city,df_resort):
+     st.write('8')
+
+def panel9(df,df_city,df_resort):
+    st.write('9')
